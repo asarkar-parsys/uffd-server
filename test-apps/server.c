@@ -32,8 +32,8 @@ int main(int argc, char **argv) {
     ffd = open(argv[1],O_RDONLY);
     fstat(ffd, &st);
     map_len = st.st_size;
-    memfd = memfd_create("uffd", 0);
-    ftruncate(memfd, map_len);
+    
+//    memfd = memfd_create("uffd", 0);
 
     if(ffd < 0){
 		char err_string[400];

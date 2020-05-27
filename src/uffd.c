@@ -16,6 +16,7 @@ void* uf_servermon(void *arg) {
   pthread_mutex_unlock(&(((struct handler_struct*)arg)->running));
   pthread_join(mt.thread, 0);
   close(mt.csfd);
+  shm_unlink("uffd");
 //   close(mt.uffd);
   printf("s: handler exit\n");
 }
@@ -67,12 +68,36 @@ void * fault_handler_thread(void *arg) {
       errExit("poll");
     }
     if (pfd[1].revents != 0) {
-      return 0;
+      char operation;
+      if(read(csfd,&operation,sizeof(char))<=0){
+	printf("received closure of csfd\n");
+      	return 0;
+      }else{
+        pfd[1].revents = 0;
+        if(operation==5){
+	  printf("received reset\n");
+#if 0
+          if(madvise((void *)0x600000000000,hs->region_size,MADV_DONTNEED)){
+		perror("madvise failed");
+		return 0;
+          }else{
+#endif
+		char reset = 1;
+		write(csfd,&reset,sizeof(char));
+#if 0
+	  }
+#endif
+        }
+      }
     }
-    pfd[0].revents = 0;
-    pfd[1].revents = 0;
+    if(pfd[0].revents==0){
+      continue;
+    }else{
+      pfd[0].revents = 0;
+      pfd[1].revents = 0;
+    }
 
-    printf("\nfault_handler_thread():\n");
+    //printf("\nfault_handler_thread():\n");
 
     /* Read an event from the userfaultfd */
     nread = read(uffd, &msg, sizeof(msg));
@@ -91,9 +116,9 @@ void * fault_handler_thread(void *arg) {
     }
 
     /* Display info about the page-fault event */
-    printf("    UFFD_EVENT_PAGEFAULT event: ");
-    printf("flags = %llx; ", msg.arg.pagefault.flags);
-    printf("address = %llx\n", msg.arg.pagefault.address);
+    //printf("    UFFD_EVENT_PAGEFAULT event: ");
+    //printf("flags = %llx; ", msg.arg.pagefault.flags);
+    //printf("address = %llx\n", msg.arg.pagefault.address);
 
     /* Copy the page pointed to by 'page' into the faulting
       region. Vary the contents that are copied in, so that it
@@ -118,8 +143,9 @@ void * fault_handler_thread(void *arg) {
     if (ioctl(uffd, UFFDIO_COPY, &uffdio_copy) == -1)
       errExit("ioctl-UFFDIO_COPY");
 
-    printf("        (uffdio_copy.copy returned %lld)\n", uffdio_copy.copy);
+    //printf("wtf:        (uffdio_copy.copy returned %lld)\n with fault_cnt=%d\n", uffdio_copy.copy,fault_cnt);
   }
+  printf("Exiting handler\n");
   return 0;
 }
 
@@ -156,11 +182,14 @@ pthread_t uf_server(int csfd, int memfd, uint64_t map_len, int filefd) {
   pthread_t thr, mon;
   char* addr;
 
-  map_len=(map_len & ~(page_size - 1)) + page_size; 
+  map_len=(map_len & ~(page_size - 1)); 
+  memfd = shm_open("uffd-csr",O_CREAT | O_RDWR | O_TRUNC, S_IRUSR|S_IWUSR);
+  ftruncate(memfd, map_len);
+  mmap((void *)0x600000000000, map_len, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, memfd, 0);
 
   // handshake: server sends memfd and region size, client mmaps and returns its uffd
   printf("s: send memfd\n");
-  size = sock_fd_write(csfd, (char*)&map_len, sizeof(uint64_t), memfd);
+  size = write(csfd, (char*)&map_len, sizeof(uint64_t));
   printf("s: recv uffd\n");
   sock_fd_read(csfd, &addr, sizeof(char*), &uffd);
   printf("s: addr: %p uffd: %d map_len=%d\n", addr,uffd, map_len);
@@ -172,6 +201,7 @@ pthread_t uf_server(int csfd, int memfd, uint64_t map_len, int filefd) {
   hs.csfd = csfd;
   hs.filefd = filefd;
   hs.base_addr = addr;
+  hs.region_size = map_len;
 
   pthread_create(&thr, NULL, fault_handler_thread, (void *) &hs);
 //   pthread_detach(thr);
@@ -192,6 +222,15 @@ pthread_t uf_server(int csfd, int memfd, uint64_t map_len, int filefd) {
   return mon;
 }
 
+int reset_mem(int sock){
+  char status = 5;
+  write(sock,&status,sizeof(char));
+  
+  if(read(sock,&status,sizeof(char))<=0){
+	perror("reset_mem failed");
+  }
+}
+
 void uf_client(int sock, void** addr, uint64_t* sz) {
   ssize_t size;
   int i;
@@ -200,11 +239,17 @@ void uf_client(int sock, void** addr, uint64_t* sz) {
   uffd = init_uffd();
 
   // recieve memfd and region size
-  sock_fd_read(sock, sz, sizeof(uint64_t), &memfd);
-  printf("c: recv memfd = %d sz = %ld\n", memfd, *sz);
+  sock_recv(sock,(char *)sz, sizeof(uint64_t));
+  printf("c: recv sz = %ld\n", *sz);
+  getchar();
 
-  *addr = 0;
-  *addr = mmap((void *)0x60f4325ea000, *sz, PROT_READ, MAP_SHARED|MAP_FIXED, memfd, 0);
+  memfd = shm_open("uffd-csr",O_RDWR,0);
+  printf("memfd by shm_open = %d\n", memfd);
+  if(memfd == -1){
+    perror("c: shm failed");
+    exit(1);
+  }
+  *addr = mmap((void *)0x600000000000, *sz, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, memfd, 0);
   if ((int64_t)*addr == -1) {
     perror("c: map failed");
     exit(1);
@@ -217,8 +262,9 @@ void uf_client(int sock, void** addr, uint64_t* sz) {
   printf("c: send uffd %d\n", uffd);
   size = sock_fd_write(sock, addr, sizeof(*addr), uffd);
 
-  int status = 0;
+  char status = 0;
   sock_recv(sock, (char*)&status, 1);
+  close(uffd);
 
   if (status) {
     fprintf(stderr, "c: registration failed\n");

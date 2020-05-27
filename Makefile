@@ -5,9 +5,9 @@ export INCLUDE_DIR = -I$(ROOT_DIR)/include
 all: libs test
 
 libs:
-	$(MAKE) -C src all 
+	$(MAKE) -C src all -lrt
 test:
-	$(MAKE) -C test-apps all
+	$(MAKE) -C test-apps all -lrt
 
 run-server:
 	$(MAKE) -C test-apps run-server

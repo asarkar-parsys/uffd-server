@@ -9,17 +9,31 @@
 #include <semaphore.h>
 #include "uffd.h"
 #include "socket.h"
-void client(char *addr, unsigned long len) {
-  int l;
+void client(char *addr, uint64_t len, int cfd) {
+  uint64_t l;
+  int rep_count = 1;
+  printf("len = %ld\n",len);
+  getchar();
   l = 0xf;    /* Ensure that faulting address is not on a page
                 boundary, in order to test that we correctly
                 handle that case in fault_handling_thread() */
+  printf("Going to read now\n");
   while (l < len) {
+    if(rep_count == 4096){
+//      if(madvise((void *)(((uint64_t)addr + l-1677216)&(~4095)),1677216,MADV_DONTNEED)){
+      if(madvise((void *)(addr), len, MADV_DONTNEED)){
+	perror("madvise failed\n");
+      }
+      reset_mem(cfd);
+      rep_count= 1;
+    }
     char c = addr[l];
-    printf("Read address %p in client(): ", addr + l);
-    printf("%c\n", c);
-    l += 1024;
+  //  printf("Read address %p in client(): ", addr + l);
+  //  printf("%c\n", c);
+    l += 4096;
+    rep_count++;
   }
+  printf("Done reading everything\n");
 }
 
 int main(int argc, char **argv) {
@@ -44,8 +58,21 @@ int main(int argc, char **argv) {
   uf_client(cfd, &addr, &sz);
   
   printf("c: start client\n");
+  client(addr, sz, cfd);
+#if 0
+  printf("c: calling reset memory\n");
+  getchar();
+  reset_mem(cfd);
+  printf("c: reset memory done\n");
+  getchar();
   client(addr, sz);
+  getchar();
+#endif
+  printf("Finished running client\n");
+  shm_unlink("uffd"); 
+  printf("Finished unlinking shared memory\n");
   close(cfd);
+  printf("Finished closing socket communication\n");
   return 0;
 }
 

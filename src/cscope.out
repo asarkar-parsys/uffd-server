@@ -1,4 +1,4 @@
-cscope 15 $HOME/dst-pmemio/uffd-socket/src               0000303136
+cscope 15 $HOME/dst-pmemio/uffd-server/src               0000304148
 	@socket.c
 
 1 
@@ -629,15 +629,19 @@ mt
 csfd
 );
 
-20 
+19 
+	`shm_uÆšk
+("uffd");
+
+21 
 	`´štf
 ("s: handlerƒxit\n");
 
-21 
+22 
 	}
 }
 
-23 
+24 
 	$š™_hªdËr_¡ruù
 (
 hªdËr_¡ruù
@@ -645,7 +649,7 @@ hªdËr_¡ruù
 hs
 ) {
 
-24 
+25 
 	`±h»ad_mu‹x_š™
 (&
 hs
@@ -653,7 +657,7 @@ hs
 ruÂšg
 , 0);
 
-25 
+26 
 	`±h»ad_mu‹x_lock
 (&
 hs
@@ -661,17 +665,17 @@ hs
 ruÂšg
 );
 
-26 
+27 
 	}
 }
 
-28 * 
+29 * 
 	$çuÉ_hªdËr_th»ad
 (*
 ¬g
 ) {
 
-29 
+30 
 hªdËr_¡ruù
 * 
 hs
@@ -679,67 +683,67 @@ hs
 ¬g
 ;
 
-30 
+31 
 uffd_msg
  
 msg
 ;
 
-31 
+32 
 çuÉ_út
  = 0;
 
-32 
+33 
 uffd
 ;
 
-33 
+34 
 csfd
 ;
 
-34 *
+35 *
 ·ge
  = 
 NULL
 ;
 
-35 
+36 
 uffdio_cÝy
  uffdio_copy;
 
-36 
+37 
 ssize_t
  
 Ä—d
 ;
 
-37 
+38 
 fžefd
 ;
 
-38 
+39 
 ba£_·ge_addr
 ;
 
-40 
+41 
 uffd
  = 
 hs
 ->uffd;
 
-41 
+42 
 csfd
  = 
 hs
 ->csfd;
 
-42 
+43 
 fžefd
  = 
 hs
 ->filefd;
 
-43 
+44 
 ba£_·ge_addr
  = ()
 hs
@@ -749,13 +753,13 @@ ba£_addr
 ·ge_size
  - 1);
 
-46 ià(
+47 ià(
 ·ge
  =ð
 NULL
 ) {
 
-47 
+48 
 ·ge
  = 
 	`mm­
@@ -773,21 +777,21 @@ MAP_PRIVATE
 MAP_ANONYMOUS
 , 0, 0);
 
-48 ià(
+49 ià(
 ·ge
  =ð
 MAP_FAILED
 )
 
-49 
+50 
 	`”rEx™
 ("ft-mmap");
 
-52 
+53 
 	`´štf
 ("\nfault_handler_thread(): init\n");
 
-54 
+55 
 	`±h»ad_mu‹x_uÆock
 (&
 hs
@@ -795,13 +799,13 @@ hs
 ruÂšg
 );
 
-56 
+57 
 pÞlfd
  
 pfd
 [2] = {
 
-57 { .
+58 { .
 fd
  = 
 uffd
@@ -813,7 +817,7 @@ POLLIN
 »v’ts
  = 0 },
 
-58 { .
+59 { .
 fd
  = 
 csfd
@@ -829,11 +833,11 @@ POLLPRI
 »v’ts
  = 0 }
 
-64 
+65 
 Ä—dy
 ;
 
-65 
+66 
 Ä—dy
  = 
 	`pÞl
@@ -841,37 +845,95 @@ POLLPRI
 pfd
 , 2, -1);
 
-66 ià(
+67 ià(
 Ä—dy
  == -1) {
 
-67 
+68 
 	`”rEx™
 ("poll");
 
-69 ià(
+70 ià(
 pfd
 [1].
 »v’ts
  != 0) {
 
-72 
-pfd
-[0].
-»v’ts
- = 0;
+71 
+Ý”©iÚ
+;
+
+72 if(
+	`»ad
+(
+csfd
+,&
+Ý”©iÚ
+,())==0){
 
 73 
+	`´štf
+("received closure of csfd\n");
+
+76 
 pfd
 [1].
 »v’ts
  = 0;
 
-75 
+77 if(
+Ý”©iÚ
+==5){
+
+78 
+	`´štf
+("received„eset\n");
+
+79 if(
+	`madvi£
+((*)0x600000000000,1024*1024,
+MADV_DONTNEED
+)){
+
+80 
+	`³¼Ü
+("madvise failed");
+
+83 
+»£t
+ = 1;
+
+84 
+	`wr™e
+(
+csfd
+,&
+»£t
+,());
+
+89 if(
+pfd
+[0].
+»v’ts
+==0){
+
+92 
+pfd
+[0].
+»v’ts
+ = 0;
+
+93 
+pfd
+[1].
+»v’ts
+ = 0;
+
+96 
 	`´štf
 ("\nfault_handler_thread():\n");
 
-78 
+99 
 Ä—d
  = 
 	`»ad
@@ -881,29 +943,29 @@ uffd
 msg
 , (msg));
 
-79 ià(
+100 ià(
 Ä—d
  == 0) {
 
-80 
+101 
 	`´štf
 ("EOF on userfaultfd!\n");
 
-81 
+102 
 	`ex™
 (
 EXIT_FAILURE
 );
 
-84 ià(
+105 ià(
 Ä—d
  == -1)
 
-85 
+106 
 	`”rEx™
 ("read");
 
-88 ià(
+109 ià(
 msg
 .
 ev’t
@@ -911,23 +973,23 @@ ev’t
 UFFD_EVENT_PAGEFAULT
 ) {
 
-89 
+110 
 	`årštf
 (
 ¡d”r
 , "Unexpectedƒvent on userfaultfd\n");
 
-90 
+111 
 	`ex™
 (
 EXIT_FAILURE
 );
 
-94 
+115 
 	`´štf
 (" UFFD_EVENT_PAGEFAULTƒvent: ");
 
-95 
+116 
 	`´štf
 ("æag ð%Îx; ", 
 msg
@@ -939,7 +1001,7 @@ msg
 æags
 );
 
-96 
+117 
 	`´štf
 ("add»s ð%Îx\n", 
 msg
@@ -951,7 +1013,7 @@ msg
 add»ss
 );
 
-101 
+122 
 çuÉ_·ge_addr
  = (è
 msg
@@ -965,7 +1027,7 @@ add»ss
 ·ge_size
  - 1);
 
-104 
+125 
 	`l£ek
 (
 fžefd
@@ -977,7 +1039,7 @@ ba£_·ge_addr
 SEEK_SET
 );
 
-105 
+126 
 	`»ad
 (
 fžefd
@@ -987,11 +1049,11 @@ fžefd
 ·ge_size
 );
 
-107 
+128 
 çuÉ_út
 ++;
 
-109 
+130 
 uffdio_cÝy
 .
 ¤c
@@ -999,7 +1061,7 @@ uffdio_cÝy
 ·ge
 ;
 
-114 
+135 
 uffdio_cÝy
 .
 d¡
@@ -1007,7 +1069,7 @@ d¡
 çuÉ_·ge_addr
 ;
 
-115 
+136 
 uffdio_cÝy
 .
 Ën
@@ -1015,19 +1077,19 @@ uffdio_cÝy
 ·ge_size
 ;
 
-116 
+137 
 uffdio_cÝy
 .
 mode
  = 0;
 
-117 
+138 
 uffdio_cÝy
 .
 cÝy
  = 0;
 
-118 ià(
+139 ià(
 	`ioùl
 (
 uffd
@@ -1037,35 +1099,41 @@ UFFDIO_COPY
 uffdio_cÝy
 ) == -1)
 
-119 
+140 
 	`”rEx™
 ("ioctl-UFFDIO_COPY");
 
-121 
+142 
 	`´štf
-(" (uffdio_cÝy.cÝy„‘uºed %Îd)\n", 
+("wtf: (uffdio_cÝy.cÝy„‘uºed %Îd)\Àw™h fauÉ_út=%d\n", 
 uffdio_cÝy
 .
 cÝy
+,
+çuÉ_út
 );
 
-124 
+144 
+	`´štf
+("Exiting handler\n");
+
+146 
 	}
 }
 
-126 
+148 
 	$š™_uffd
 () {
 
-127 
+149 
 uffdio_­i
  uffdio_api;
 
-128 
+150 
 uffd
 ;
 
-131 
+153 
 uffd
  = 
 	`sysÿÎ
@@ -1077,15 +1145,15 @@ O_CLOEXEC
 O_NONBLOCK
 );
 
-132 ià(
+154 ià(
 uffd
  == -1)
 
-133 
+155 
 	`”rEx™
 ("userfaultfd");
 
-135 
+157 
 uffdio_­i
 .
 ­i
@@ -1093,13 +1161,13 @@ uffdio_­i
 UFFD_API
 ;
 
-136 
+158 
 uffdio_­i
 .
 ã©u»s
  = 0;
 
-137 ià(
+159 ià(
 	`ioùl
 (
 uffd
@@ -1109,19 +1177,19 @@ UFFDIO_API
 uffdio_­i
 ) == -1)
 
-138 
+160 
 	`”rEx™
 ("ioctl-UFFDIO_API");
 
-140  
+162  
 uffd
 ;
 
-141 
+163 
 	}
 }
 
-142 
+164 
 	$»gi¡”_uffd
 (
 uffd
@@ -1131,11 +1199,11 @@ addr
 Ën
 ) {
 
-143 
+165 
 uffdio_»gi¡”
  uffdio_register;
 
-145 
+167 
 uffdio_»gi¡”
 .
 ¿nge
@@ -1145,7 +1213,7 @@ uffdio_»gi¡”
 addr
 ;
 
-146 
+168 
 uffdio_»gi¡”
 .
 ¿nge
@@ -1153,7 +1221,7 @@ uffdio_»gi¡”
 Ën
  =†en;
 
-147 
+169 
 uffdio_»gi¡”
 .
 mode
@@ -1161,7 +1229,7 @@ mode
 UFFDIO_REGISTER_MODE_MISSING
 ;
 
-148 ià(
+170 ià(
 	`ioùl
 (
 uffd
@@ -1171,21 +1239,21 @@ UFFDIO_REGISTER
 uffdio_»gi¡”
 ) == -1)
 
-149 
+171 
 	`”rEx™
 ("ioctl-UFFDIO_REGISTER");
 
-150 
+172 
 	`´štf
 ("u£rçuÉ„egiÚ = %p\n", 
 addr
 );
 
-151 
+173 
 	}
 }
 
-153 
+175 
 ±h»ad_t
  
 	$uf_£rv”
@@ -1201,17 +1269,17 @@ m­_Ën
 fžefd
 ) {
 
-154 
+176 
 uffd
 ;
 
-155 
+177 
 ssize_t
  
 size
 ;
 
-156 
+178 
 ±h»ad_t
  
 thr
@@ -1219,21 +1287,59 @@ thr
 mÚ
 ;
 
-157 * 
+179 * 
 addr
 ;
 
-159 
+181 
 m­_Ën
 =(m­_ËÀ& ~(
 ·ge_size
- - 1)) +…age_size;
+ - 1));
 
-162 
+182 
+memfd
+ = 
+	`shm_Ý’
+("uffd",
+O_CREAT
+ | 
+O_RDWR
+ | 
+O_TRUNC
+, 
+S_IRUSR
+|
+S_IWUSR
+);
+
+183 
+	`árunÿ‹
+(
+memfd
+, 
+m­_Ën
+);
+
+184 
+	`mm­
+((*)0x600000000000, 
+m­_Ën
+, 
+PROT_READ
+, 
+MAP_SHARED
+|
+MAP_FIXED
+, 
+memfd
+, 0);
+
+187 
 	`´štf
 ("s: send memfd\n");
 
-163 
+188 
 size
  = 
 	`sock_fd_wr™e
@@ -1247,11 +1353,11 @@ ušt64_t
 memfd
 );
 
-164 
+189 
 	`´štf
 ("s:„ecv uffd\n");
 
-165 
+190 
 	`sock_fd_»ad
 (
 csfd
@@ -1261,7 +1367,7 @@ addr
 uffd
 );
 
-166 
+191 
 	`´štf
 ("s:‡ddr: %°uffd: %d m­_Ën=%d\n", 
 addr
@@ -1271,7 +1377,7 @@ uffd
 m­_Ën
 );
 
-167 
+192 
 	`»gi¡”_uffd
 ((
 ušt64_t
@@ -1283,37 +1389,37 @@ addr
 m­_Ën
 );
 
-169 
+194 
 hªdËr_¡ruù
  
 hs
 ;
 
-170 
+195 
 	`š™_hªdËr_¡ruù
 (&
 hs
 );
 
-171 
+196 
 hs
 .
 uffd
  = uffd;
 
-172 
+197 
 hs
 .
 csfd
  = csfd;
 
-173 
+198 
 hs
 .
 fžefd
  = filefd;
 
-174 
+199 
 hs
 .
 ba£_addr
@@ -1321,7 +1427,7 @@ ba£_addr
 addr
 ;
 
-176 
+201 
 	`±h»ad_ü—‹
 (&
 thr
@@ -1333,7 +1439,7 @@ NULL
 hs
 );
 
-178 
+203 
 	`±h»ad_mu‹x_lock
 (&
 hs
@@ -1341,31 +1447,31 @@ hs
 ruÂšg
 );
 
-180 
+205 
 hªdËr_¡ruù
  
 mt
 ;
 
-181 
+206 
 	`š™_hªdËr_¡ruù
 (&
 mt
 );
 
-182 
+207 
 mt
 .
 uffd
  = uffd;
 
-183 
+208 
 mt
 .
 csfd
  = csfd;
 
-184 
+209 
 mt
 .
 th»ad
@@ -1373,7 +1479,7 @@ th»ad
 thr
 ;
 
-185 
+210 
 	`±h»ad_ü—‹
 (&
 mÚ
@@ -1385,13 +1491,13 @@ uf_£rv”mÚ
 mt
 );
 
-186 
+211 
 	`±h»ad_d‘ach
 (
 mÚ
 );
 
-187 
+212 
 	`±h»ad_mu‹x_lock
 (&
 mt
@@ -1399,25 +1505,59 @@ mt
 ruÂšg
 );
 
-190 
+215 
 	`wr™e
 (
 csfd
 , "\x00", 1);
 
-191 
+216 
 	`´štf
 ("s: init done\n");
 
-192  
+217  
 mÚ
 ;
 
-193 
+218 
 	}
 }
 
-195 
+220 
+	$»£t_mem
+(
+sock
+){
+
+221 
+¡©us
+ = 5;
+
+222 
+	`wr™e
+(
+sock
+,&
+¡©us
+,());
+
+224 if(
+	`sock_»cv
+(
+sock
+,&
+¡©us
+,())==-1){
+
+225 
+	`³¼Ü
+("reset_mem failed");
+
+227 
+	}
+}
+
+229 
 	$uf_þ›Á
 (
 sock
@@ -1429,29 +1569,29 @@ ušt64_t
 sz
 ) {
 
-196 
+230 
 ssize_t
  
 size
 ;
 
-197 
+231 
 i
 ;
 
-198 
+232 
 uffd
 , 
 memfd
 ;
 
-200 
+234 
 uffd
  = 
 	`š™_uffd
 ();
 
-203 
+237 
 	`sock_fd_»ad
 (
 sock
@@ -1463,7 +1603,7 @@ ušt64_t
 memfd
 );
 
-204 
+238 
 	`´štf
 ("c:„ecv memfd = %d sz = %ld\n", 
 memfd
@@ -1471,15 +1611,37 @@ memfd
 sz
 );
 
-206 *
-addr
- = 0;
+240 
+memfd
+ = 
+	`shm_Ý’
+("uffd",
+O_RDWR
+,0);
 
-207 *
+241 
+	`´štf
+("memfd by shm_Ý’ = %d\n", 
+memfd
+);
+
+242 if(
+memfd
+ == -1){
+
+243 
+	`³¼Ü
+("c: shm failed");
+
+244 
+	`ex™
+(1);
+
+246 *
 addr
  = 
 	`mm­
-((*)0x60f4325—000, *
+((*)0x600000000000, *
 sz
 , 
 PROT_READ
@@ -1491,33 +1653,33 @@ MAP_FIXED
 memfd
 , 0);
 
-208 ià((
+247 ià((
 št64_t
 )*
 addr
  == -1) {
 
-209 
+248 
 	`³¼Ü
 ("c: map failed");
 
-210 
+249 
 	`ex™
 (1);
 
-213 
+252 
 	`´štf
 ("c: mm­: %p\n", *
 addr
 );
 
-217 
+256 
 	`´štf
 ("c: s’d uffd %d\n", 
 uffd
 );
 
-218 
+257 
 size
  = 
 	`sock_fd_wr™e
@@ -1529,11 +1691,11 @@ addr
 uffd
 );
 
-220 
+259 
 ¡©us
  = 0;
 
-221 
+260 
 	`sock_»cv
 (
 sock
@@ -1541,21 +1703,27 @@ sock
 ¡©us
 , 1);
 
-223 ià(
+261 
+	`þo£
+(
+uffd
+);
+
+263 ià(
 ¡©us
 ) {
 
-224 
+264 
 	`årštf
 (
 ¡d”r
 , "c:„egistration failed\n");
 
-225 
+265 
 	`ex™
 (1);
 
-227 
+267 
 	}
 }
 

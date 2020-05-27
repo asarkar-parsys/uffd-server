@@ -34,7 +34,8 @@ struct handler_struct {
   int uffd;                                                 // userfault fd
   int csfd;                                                 // client socket fd
   int filefd;
-  char *base_addr; 
+  char *base_addr;
+  uint64_t region_size;
   pthread_mutex_t running;
   pthread_t thread;
 };
@@ -45,5 +46,6 @@ void * fault_handler_thread(void *arg);
 long init_uffd();
 void register_uffd(long uffd, char* addr, unsigned long len); 
 pthread_t uf_server(int csfd, int memfd, uint64_t map_len, int filefd); 
-void uf_client(int sock, void** addr, uint64_t* sz); 
+void uf_client(int sock, void** addr, uint64_t* sz);
+int reset_mem(int sock);
 #endif

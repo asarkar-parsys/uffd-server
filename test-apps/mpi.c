@@ -13,7 +13,7 @@
 #include "uffd.h"
 #include "socket.h"
 
-void client(char *addr, unsigned long len) {
+void client(char *addr, uint64_t len) {
   int l;
   l = 0xf;    /* Ensure that faulting address is not on a page
                 boundary, in order to test that we correctly
