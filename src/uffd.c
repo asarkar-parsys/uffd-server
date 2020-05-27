@@ -219,6 +219,7 @@ void uf_client(int sock, void** addr, uint64_t* sz) {
 
   int status = 0;
   sock_recv(sock, (char*)&status, 1);
+  close(uffd);
 
   if (status) {
     fprintf(stderr, "c: registration failed\n");
