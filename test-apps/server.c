@@ -17,6 +17,7 @@
 int main(int argc, char **argv) {
   int sfd = socket(AF_UNIX, SOCK_STREAM, 0);
   struct sockaddr_un addr;
+  void *server_addr;
   int ffd = -1;
   uint64_t map_len = 0;
   struct stat st;
@@ -32,8 +33,13 @@ int main(int argc, char **argv) {
     ffd = open(argv[1],O_RDONLY);
     fstat(ffd, &st);
     map_len = st.st_size;
+    printf("st.st_size=%ld\n",st.st_size);
     memfd = memfd_create("uffd", 0);
     ftruncate(memfd, map_len);
+    map_len = map_len & ~(page_size - 1);
+    map_len += page_size;
+    server_addr = mmap((void *)0x600000000000, map_len, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, memfd, 0);
+    printf("Mapped into server's address space = %llx\n",server_addr);
 
     if(ffd < 0){
 		char err_string[400];

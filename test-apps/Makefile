@@ -1,6 +1,6 @@
 APP_DIR=$(INSTALL_DIR)/test/
 LD_FLAGS = -L$(INSTALL_DIR)/lib/ -Wl,-rpath=$(INSTALL_DIR)/lib/ 
-LIBS = -luffd
+LIBS = -luffd -fopenmp
 all: setup socket-server socket-client mpi 
 setup:
 	mkdir -p $(APP_DIR)

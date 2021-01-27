@@ -72,7 +72,7 @@ void * fault_handler_thread(void *arg) {
     pfd[0].revents = 0;
     pfd[1].revents = 0;
 
-    printf("\nfault_handler_thread():\n");
+    //printf("\nfault_handler_thread():\n");
 
     /* Read an event from the userfaultfd */
     nread = read(uffd, &msg, sizeof(msg));
@@ -91,20 +91,43 @@ void * fault_handler_thread(void *arg) {
     }
 
     /* Display info about the page-fault event */
-    printf("    UFFD_EVENT_PAGEFAULT event: ");
-    printf("flags = %llx; ", msg.arg.pagefault.flags);
-    printf("address = %llx\n", msg.arg.pagefault.address);
+    //printf("    UFFD_EVENT_PAGEFAULT event: ");
+    //printf("flags = %llx; ", msg.arg.pagefault.flags);
+    //printf("address = %llx\n", msg.arg.pagefault.address);
 
     /* Copy the page pointed to by 'page' into the faulting
       region. Vary the contents that are copied in, so that it
       is more obvious that each fault is handled separately. */
     unsigned long fault_page_addr = (unsigned long) msg.arg.pagefault.address & ~(page_size - 1);
+    fault_cnt++;
 
+    if(fault_cnt == 256){
+      madvise((void *)(0x600500000000), page_size, MADV_REMOVE ); //Setting up the madvise
+    }
+    
+    if(fault_page_addr == (void *)0x600500000000){
+      struct timeval start, end;
+      unsigned long long overhead=0;
+      printf("Got another fault from  = 0x%llx and removing pages from 0x%llx with len =%lld with fault_cnt=%ld\n",fault_page_addr, base_page_addr,fault_page_addr - base_page_addr, fault_cnt); 
+      gettimeofday(&start,NULL);
+      unsigned long div = atol(getenv("DIV"));
+      unsigned long sz = 1048576/div;
+      //printf("div = %ld, sz = %ld\n", div,sz);
+      unsigned long i=0;
+      for(i=0;i<div;i++){
+        if(madvise((void *)base_page_addr + i*sz*page_size, (unsigned long)sz*page_size, MADV_REMOVE)){
+          errExit("MADV_REMOVE"); 
+        }
+      }
+      gettimeofday(&end,NULL);
+      overhead += ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec));
+      printf("Total overhead = %lld\n", overhead);
+      fault_cnt = 0;
+    }
     
     lseek(filefd,fault_page_addr - base_page_addr,SEEK_SET);
     read(filefd, page, page_size);
     //memset(page, 'A' + fault_cnt % 20, page_size);
-    fault_cnt++;
 
     uffdio_copy.src = (unsigned long) page;
 
@@ -115,10 +138,11 @@ void * fault_handler_thread(void *arg) {
     uffdio_copy.len = page_size;
     uffdio_copy.mode = 0;
     uffdio_copy.copy = 0;
-    if (ioctl(uffd, UFFDIO_COPY, &uffdio_copy) == -1)
+    if (ioctl(uffd, UFFDIO_COPY, &uffdio_copy) == -1){
+      printf("src=0x%llx, dst=0x%llx, len=lld\n",uffdio_copy.src,uffdio_copy.dst,uffdio_copy.len);
       errExit("ioctl-UFFDIO_COPY");
-
-    printf("        (uffdio_copy.copy returned %lld)\n", uffdio_copy.copy);
+    }
+    //printf("        (uffdio_copy.copy returned %lld)\n", uffdio_copy.copy);
   }
   return 0;
 }
@@ -156,14 +180,16 @@ pthread_t uf_server(int csfd, int memfd, uint64_t map_len, int filefd) {
   pthread_t thr, mon;
   char* addr;
 
-  map_len=(map_len & ~(page_size - 1)) + page_size; 
+  map_len=(map_len & ~(page_size - 1)); 
+  printf("page aligned size %lld\n", map_len);
+  map_len=map_len + page_size; 
 
   // handshake: server sends memfd and region size, client mmaps and returns its uffd
   printf("s: send memfd\n");
   size = sock_fd_write(csfd, (char*)&map_len, sizeof(uint64_t), memfd);
   printf("s: recv uffd\n");
   sock_fd_read(csfd, &addr, sizeof(char*), &uffd);
-  printf("s: addr: %p uffd: %d map_len=%d\n", addr,uffd, map_len);
+  printf("s: addr: %p uffd: %d map_len=%ld\n", addr,uffd, map_len);
   register_uffd((uint64_t) uffd, addr, map_len);
 
   struct handler_struct hs;
@@ -204,7 +230,7 @@ void uf_client(int sock, void** addr, uint64_t* sz) {
   printf("c: recv memfd = %d sz = %ld\n", memfd, *sz);
 
   *addr = 0;
-  *addr = mmap((void *)0x60f4325ea000, *sz, PROT_READ, MAP_SHARED|MAP_FIXED, memfd, 0);
+  *addr = mmap((void *)0x600000000000, *sz, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, memfd, 0);
   if ((int64_t)*addr == -1) {
     perror("c: map failed");
     exit(1);

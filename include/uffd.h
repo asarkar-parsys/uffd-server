@@ -28,7 +28,7 @@
 #ifndef POLLRDHUP
 #define POLLRDHUP 0x2000
 #endif
-uint64_t page_size = 4096;
+uint64_t page_size = 16*1024;
 
 struct handler_struct {
   int uffd;                                                 // userfault fd
