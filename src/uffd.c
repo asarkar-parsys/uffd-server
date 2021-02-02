@@ -59,6 +59,8 @@ void * fault_handler_thread(void *arg) {
   };
   /* Loop, handling incoming events on the userfaultfd
     file descriptor */
+
+  int flock_fd = open("lock_file",O_RDWR);
   for (;;) {
     /* See what poll() tells us about the userfaultfd */
     int nready;
@@ -138,11 +140,15 @@ void * fault_handler_thread(void *arg) {
     uffdio_copy.len = page_size;
     uffdio_copy.mode = 0;
     uffdio_copy.copy = 0;
+
+    flock(flock_fd,LOCK_EX);    
     if (ioctl(uffd, UFFDIO_COPY, &uffdio_copy) == -1){
-      printf("src=0x%llx, dst=0x%llx, len=lld\n",uffdio_copy.src,uffdio_copy.dst,uffdio_copy.len);
-      errExit("ioctl-UFFDIO_COPY");
+      printf("src=0x%llx, dst=0x%llx, len=%lld, copy=%lld\n",uffdio_copy.src,uffdio_copy.dst,uffdio_copy.len, uffdio_copy.copy);
+      perror("ioctl-UFFDIO_COPY");
+    }else{
+      printf("uffdio_copy successful for 0x%llx\n", uffdio_copy.dst);
     }
-    //printf("        (uffdio_copy.copy returned %lld)\n", uffdio_copy.copy);
+    flock(flock_fd,LOCK_UN);
   }
   return 0;
 }
@@ -170,7 +176,7 @@ void register_uffd(long uffd, char* addr, unsigned long len) {
   uffdio_register.range.len = len;
   uffdio_register.mode = UFFDIO_REGISTER_MODE_MISSING;
   if (ioctl(uffd, UFFDIO_REGISTER, &uffdio_register) == -1)
-      errExit("ioctl-UFFDIO_REGISTER");
+      perror("ioctl-UFFDIO_REGISTER");
   printf("userfault region = %p\n", addr);
 }
 

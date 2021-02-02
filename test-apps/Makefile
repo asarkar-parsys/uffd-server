@@ -1,7 +1,7 @@
 APP_DIR=$(INSTALL_DIR)/test/
 LD_FLAGS = -L$(INSTALL_DIR)/lib/ -Wl,-rpath=$(INSTALL_DIR)/lib/ 
 LIBS = -luffd -fopenmp
-all: setup socket-server socket-client mpi 
+all: setup socket-server socket-client mpi client-proc
 setup:
 	mkdir -p $(APP_DIR)
 
@@ -13,6 +13,9 @@ socket-client:
 
 mpi:
 	mpicc -std=gnu11 -pthread $(INCLUDE_DIR) mpi.c -o $(APP_DIR)/mpi $(LD_FLAGS) $(LIBS)
+
+client-proc:
+	mpicc -std=gnu11 -pthread $(INCLUDE_DIR) client-proc.c -o $(APP_DIR)/client-proc $(LD_FLAGS) $(LIBS)
 
 run-server:
 	cd $(APP_DIR);./socket-server
